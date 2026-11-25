@@ -1,0 +1,52 @@
+name: Monitor Anvisa (GLP-1 manipulados)
+
+on:
+  schedule:
+    # A cada 15 min das 7h às 20h59 (horário de Brasília), seg–sex
+    - cron: "*/15 10-23 * * 1-5"
+    # De hora em hora no restante do tempo (noites e fins de semana)
+    - cron: "41 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: monitor-anvisa
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install --quiet "pypdf>=5,<7"
+
+      - name: Verificar site da Anvisa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTIFY_MENTION: ${{ github.repository_owner }}
+        run: python monitor.py
+
+      - name: Salvar estado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json history.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "sem mudanças de estado"
+          else
+            git commit -m "monitor: atualiza estado"
+            for i in 1 2 3; do
+              git pull --rebase --quiet && git push && break
+              sleep 5
+            done
+          fi
