@@ -1,11 +1,9 @@
 name: Monitor Anvisa (GLP-1 manipulados)
 
 on:
-  schedule:
-    # A cada 15 min das 7h às 20h59 (horário de Brasília), seg–sex
-    - cron: "*/15 10-23 * * 1-5"
-    # De hora em hora no restante do tempo (noites e fins de semana)
-    - cron: "41 * * * *"
+  # Agendamento desativado: os runners do GitHub recebem "connection reset"
+  # do gov.br (bloqueio de IPs estrangeiros). Funciona só manualmente ou com
+  # runner self-hosted no Brasil (troque runs-on por "self-hosted").
   workflow_dispatch:
 
 permissions:

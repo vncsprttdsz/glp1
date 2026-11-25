@@ -17,11 +17,16 @@ aparecerem sem o número do processo, caso o tema volte com outro número.
 ## Como funciona
 
 - `monitor.py` lê o conteúdo pela API REST do portal (`/anvisa/++api++/...`) e
-  baixa os PDFs das pautas mais recentes.
-- `.github/workflows/monitor.yml` roda a cada 15 min em dias úteis (7h–21h,
-  horário de Brasília) e de hora em hora no resto do tempo. Também dá para rodar
-  manualmente em *Actions → Monitor Anvisa → Run workflow*.
+  baixa os PDFs das pautas mais recentes. Cada mudança vira um item em
+  `events.json` (ou uma issue direta, se `GITHUB_TOKEN` estiver definido).
+- **Onde roda:** uma tarefa agendada do Claude Code (de hora em hora, 7h–22h,
+  horário de Brasília) executa `python3 monitor.py`, abre uma issue para cada
+  evento e faz commit de `state.json`/`history.md`.
+- O GitHub Actions **não** funciona com agendamento: o gov.br derruba as conexões
+  dos runners do GitHub (bloqueio de IPs estrangeiros). O workflow
+  `.github/workflows/monitor.yml` ficou só com execução manual, útil com um
+  runner self-hosted no Brasil.
 - `state.json` guarda o último estado visto; `history.md` registra as mudanças.
-- Se o site falhar em 8 execuções seguidas, abre uma issue `erro`.
+- Se o site falhar em 8 execuções seguidas, gera um evento `erro`.
 
 Para trocar o processo monitorado, edite `PROCESSO` e `PROC_RE` em `monitor.py`.

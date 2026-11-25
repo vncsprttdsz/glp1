@@ -44,6 +44,7 @@ MINUTAS_URL = BASE + MINUTAS_PATH
 
 STATE_FILE = os.environ.get("STATE_FILE", "state.json")
 HISTORY_FILE = os.environ.get("HISTORY_FILE", "history.md")
+EVENTS_FILE = os.environ.get("EVENTS_FILE", "events.json")  # pendentes (não versionado)
 MAX_PDFS_PER_RUN = 6        # pautas mais recentes que são (re)lidas
 FAIL_ALERT_AFTER = 8        # execuções seguidas com erro antes de avisar
 UA = "Mozilla/5.0 (compatible; anvisa-pauta-monitor/1.0)"
@@ -294,7 +295,15 @@ def gh_issue(title: str, body: str, labels: list[str]) -> None:
     if mention:
         body += f"\n\n@{mention}"
     if not token or not repo:
-        print(f"\n=== [ISSUE simulada] {title}\n{body}\n")
+        # Sem token: grava o evento em EVENTS_FILE para outro processo abrir a issue.
+        print(f"\n=== [EVENTO] {title}\n{body}\n")
+        ev = []
+        if os.path.exists(EVENTS_FILE):
+            with open(EVENTS_FILE, encoding="utf-8") as f:
+                ev = json.load(f)
+        ev.append({"title": title, "body": body, "labels": labels})
+        with open(EVENTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(ev, f, ensure_ascii=False, indent=2)
         return
     req = urllib.request.Request(
         f"https://api.github.com/repos/{repo}/issues",
